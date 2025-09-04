@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calculadora Premium — Quantidade × Unitário × Total</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a; --bg-secondary: #0f1419; --bg-tertiary: #151b26;
+            --surface-1: rgba(255, 255, 255, 0.02); --surface-2: rgba(255, 255, 255, 0.04); --surface-3: rgba(255, 255, 255, 0.06);
+            --text-primary: #ffffff; --text-secondary: #a8b2d1; --text-muted: #6b7494;
+            --accent: #00d4ff; --accent-glow: rgba(0, 212, 255, 0.3);
+            --success: #00ff88; --warning: #ffaa00; --error: #ff4757;
+            --border: rgba(255, 255, 255, 0.1); --border-focus: rgba(0, 212, 255, 0.4);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1); --shadow-md: 0 8px 25px rgba(0, 0, 0, 0.15); --shadow-lg: 0 15px 35px rgba(0, 0, 0, 0.2);
+            --shadow-accent: 0 8px 25px var(--accent-glow);
+            --radius-md: 12px; --radius-xl: 24px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            color: var(--text-primary); line-height: 1.6; min-height: 100vh; overflow-x: hidden;
+        }
+        body::before {
+            content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(255, 170, 0, 0.05) 0%, transparent 50%);
+            pointer-events: none; z-index: -1; animation: float 20s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; position: relative; z-index: 1; }
+        .header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 3rem; padding: 1.5rem 0; }
+        .logo { width: 64px; height: 64px; border-radius: var(--radius-lg); box-shadow: var(--shadow-accent), inset 0 1px 0 rgba(255, 255, 255, 0.2); position: relative; overflow: hidden; }
+        .logo img { width: 100%; height: 100%; object-fit: cover; }
+        .header-content h1 {
+            font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; background: linear-gradient(135deg, var(--text-primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            margin-bottom: 0.5rem; letter-spacing: -0.02em;
+        }
+        .header-content p { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; font-weight: 400; }
+        .main-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; align-items: start; }
+        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+        .card {
+            background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%); border: 1px solid var(--border);
+            border-radius: var(--radius-xl); padding: 2rem; box-shadow: var(--shadow-lg); backdrop-filter: blur(10px);
+            position: relative; overflow: hidden; transition: all 0.3s ease;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.5;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg), 0 0 40px rgba(0, 212, 255, 0.1); border-color: var(--border-focus); }
+        .card-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .card-header h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+        .card-header .icon { width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 16px; color: #000; font-weight: 700; }
+        .form-section { margin-bottom: 2rem; }
+        .section-title { font-size: 1rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .form-grid { display: grid; gap: 1.5rem; }
+        .form-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .form-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 768px) { .form-grid.cols-2, .form-grid.cols-3 { grid-template-columns: 1fr; } }
+        .form-group { position: relative; }
+        .form-group label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem; transition: color 0.2s ease; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-md);
+            background: var(--surface-2); color: var(--text-primary); font-size: 1rem; font-weight: 500;
+            transition: all 0.3s ease; backdrop-filter: blur(5px);
+        }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1), var(--shadow-md); background: var(--surface-3); }
+        .form-group input[readonly] { background: var(--surface-1); opacity: 0.7; cursor: not-allowed; }
+        .radio-group { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .radio-pill input { position: absolute; opacity: 0; }
+        .radio-pill label { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-2); color: var(--text-secondary); cursor: pointer; transition: all 0.3s ease; font-weight: 500; white-space: nowrap; }
+        .radio-pill input:checked + label { background: linear-gradient(135deg, var(--accent), #0099cc); color: #000; border-color: var(--accent); box-shadow: var(--shadow-accent); transform: translateY(-1px); }
+        .radio-pill label:hover { border-color: var(--accent); background: var(--surface-3); }
+        .button-group { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+        .btn { padding: 1rem 2rem; border: none; border-radius: var(--radius-md); font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn:disabled { cursor: not-allowed; filter: grayscale(50%); opacity: 0.6; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), #0099cc); color: #000; box-shadow: var(--shadow-accent); }
+        .btn-primary:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0, 212, 255, 0.4); }
+        .btn-secondary { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:not(:disabled):hover { background: var(--surface-3); border-color: var(--accent); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        @media (max-width: 768px) { .results-grid { grid-template-columns: 1fr; } }
+        .result-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.5rem; text-align: center; position: relative; transition: all 0.3s ease; }
+        .result-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .result-card .label { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .result-card .value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); font-family: 'Courier New', monospace; }
+        .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        @media (max-width: 768px) { .status-grid { grid-template-columns: 1fr; } }
+        .status-success { color: var(--success); }
+        .status-warning { color: var(--warning); }
+        .status-error { color: var(--error); }
+        .hint { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+        .hint strong { color: var(--accent); }
+        .footer { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.9rem; text-align: center; }
+        .loading-spinner { display: inline-block; width: 1em; height: 1em; border: 2px solid currentColor; border-radius: 50%; border-top-color: transparent; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo"><img src="https://raw.githubusercontent.com/Halexandre1/PDF_PRO/main/HERBERT.jpg" alt="Logótipo"></div>
+            <div class="header-content">
+                <h1>Calculadora Premium</h1>
+                <p>Ferramenta avançada para cálculos de <strong>Quantidade × Valor Unitário × Total</strong> com precisão profissional e controle completo sobre arredondamentos.</p>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <div class="card">
+                <div class="card-header"><div class="icon">⚙</div><h2>Configuração e Entradas</h2></div>
+                <div class="form-section">
+                    <div class="section-title">Modo de Resolução</div>
+                    <div class="radio-group" id="solveOptions">
+                        <div class="radio-pill"><input type="radio" name="solve" value="total" id="solve-total"><label for="solve-total">💰 Valor Total</label></div>
+                        <div class="radio-pill"><input type="radio" name="solve" value="qty" id="solve-qty"><label for="solve-qty">📦 Quantidade</label></div>
+                        <div class="radio-pill"><input type="radio" name="solve" value="unit" id="solve-unit"><label for="solve-unit">🏷️ Valor Unitário</label></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div class="section-title">Configurações</div>
+                    <div class="form-grid cols-2">
+                        <div class="form-group"><label for="roundMode">Modo de Arredondamento</label><select id="roundMode"><option value="round">📊 Arredondar (padrão)</option><option value="floor">📉 Truncar (para baixo)</option><option value="ceil">📈 Para cima</option></select></div>
+                        <div class="form-group"><label for="sep">Separador Decimal</label><select id="sep"><option value=",">🇧🇷 Vírgula (pt-BR)</option><option value=".">🇺🇸 Ponto (en-US)</option></select></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div class="section-title">Valores</div>
+                    <div class="form-grid cols-3">
+                        <div class="form-group"><label for="qty">Quantidade</label><input id="qty" type="text" /></div>
+                        <div class="form-group"><label for="unit">Valor Unitário</label><input id="unit" type="text" /></div>
+                        <div class="form-group"><label for="total">Valor Total</label><input id="total" type="text" /></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div class="section-title">Casas Decimais</div>
+                    <div class="form-grid cols-3">
+                        <div class="form-group"><label for="dpQty">Quantidade</label><select id="dpQty"></select></div>
+                        <div class="form-group"><label for="dpUnit">Unitário</label><select id="dpUnit"></select></div>
+                        <div class="form-group"><label for="dpTotal">Total</label><select id="dpTotal"></select></div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" id="btnCalc">🧮 Calcular</button>
+                    <button class="btn btn-secondary" id="btnExact">🎯 Buscar Total Exato</button>
+                    <button class="btn btn-secondary" id="btnClear">🗑️ Limpar</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><div class="icon">📊</div><h2>Resultados</h2></div>
+                <div class="form-section">
+                    <div class="section-title">Valores Calculados</div>
+                    <div class="results-grid">
+                        <div class="result-card"><div class="label">Quantidade</div><div class="value" id="outQty">–</div></div>
+                        <div class="result-card"><div class="label">Unitário</div><div class="value" id="outUnit">–</div></div>
+                        <div class="result-card"><div class="label">Total</div><div class="value" id="outTotal">–</div></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div class="section-title">Análise</div>
+                    <div class="status-grid">
+                        <div class="result-card"><div class="label">Diferença</div><div class="value" id="outDiff">–</div></div>
+                        <div class="result-card"><div class="label">Passo</div><div class="value" id="outStep">–</div></div>
+                        <div class="result-card"><div class="label">Status</div><div class="value" id="outStatus">–</div></div>
+                    </div>
+                </div>
+                <div class="hint">O <strong>passo</strong> mostra a variação no total a cada incremento mínimo no campo resolvido.</div>
+            </div>
+        </div>
+        <footer class="footer" id="signature"></footer>
+    </div>
+
+    <script>
+        /**
+         * @file Calculadora Premium - Versão Final e Polida
+         * @author HAlexandre
+         * @version 1.1.0
+         */
+
+        const AppState = {
+            solve: 'total', roundMode: 'round', separator: ',',
+            dp: { qty: 4, unit: 4, total: 2 },
+            save() { localStorage.setItem('calcPremiumSettings', JSON.stringify(this)); },
+            load() {
+                try {
+                    const settings = JSON.parse(localStorage.getItem('calcPremiumSettings'));
+                    if (settings) Object.assign(this, settings);
+                } catch (e) { console.error("Falha ao carregar configurações:", e); }
+            }
+        };
+
+        const UI = {
+            dom: {
+                controlsCard: document.querySelector('.main-grid .card:first-child'),
+                solveOptions: document.getElementById('solveOptions'),
+                qty: document.getElementById('qty'), unit: document.getElementById('unit'), total: document.getElementById('total'),
+                roundMode: document.getElementById('roundMode'), sep: document.getElementById('sep'),
+                dpQty: document.getElementById('dpQty'), dpUnit: document.getElementById('dpUnit'), dpTotal: document.getElementById('dpTotal'),
+                btnCalc: document.getElementById('btnCalc'), btnExact: document.getElementById('btnExact'), btnClear: document.getElementById('btnClear'),
+                outQty: document.getElementById('outQty'), outUnit: document.getElementById('outUnit'), outTotal: document.getElementById('outTotal'),
+                outDiff: document.getElementById('outDiff'), outStep: document.getElementById('outStep'), outStatus: document.getElementById('outStatus'),
+                signature: document.getElementById('signature'),
+            },
+
+            init() {
+                this.populateDecimalOptions();
+                this.updateFromState();
+                this.updateInputStates();
+                this.setSignature();
+            },
+            
+            populateDecimalOptions() {
+                const selects = { dpQty: this.dom.dpQty, dpUnit: this.dom.dpUnit, dpTotal: this.dom.dpTotal };
+                for (const key in selects) {
+                    const select = selects[key];
+                    select.innerHTML = '';
+                    for (let i = 0; i <= 8; i++) select.add(new Option(i, i));
+                }
+            },
+
+            updateFromState() {
+                document.querySelector(`input[name="solve"][value="${AppState.solve}"]`).checked = true;
+                this.dom.roundMode.value = AppState.roundMode;
+                this.dom.sep.value = AppState.separator;
+                this.dom.dpQty.value = AppState.dp.qty;
+                this.dom.dpUnit.value = AppState.dp.unit;
+                this.dom.dpTotal.value = AppState.dp.total;
+            },
+
+            updateInputStates() {
+                ['qty', 'unit', 'total'].forEach(id => {
+                    this.dom[id].readOnly = AppState.solve === id;
+                    if (this.dom[id].readOnly) this.dom[id].value = '';
+                });
+            },
+            
+            formatInputOnBlur(event) {
+                const input = event.target;
+                const key = input.id;
+                const dp = AppState.dp[key];
+                const sep = AppState.separator;
+                const value = Logic.parseNumber(input.value, sep);
+                if (isFinite(value)) {
+                    input.value = Logic.formatNumber(value, dp, sep);
+                }
+            },
+            
+            toggleButtonLoading(button, isLoading) {
+                if (isLoading) {
+                    button.disabled = true;
+                    button.innerHTML = '<span class="loading-spinner"></span> Buscando...';
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = '🎯 Buscar Total Exato';
+                }
+            },
+
+            renderResults(result) {
+                const { solvedQty, solvedUnit, totalCalc, diff, step, status, statusClass } = result;
+                const sep = AppState.separator;
+                
+                this.dom.outQty.textContent = Logic.formatNumber(solvedQty, AppState.dp.qty, sep);
+                this.dom.outUnit.textContent = Logic.formatNumber(solvedUnit, AppState.dp.unit, sep);
+                this.dom.outTotal.textContent = Logic.formatNumber(totalCalc, AppState.dp.total, sep);
+                this.dom.outStep.textContent = Logic.formatNumber(step, AppState.dp.total, sep);
+
+                if (isFinite(diff)) {
+                    this.dom.outDiff.textContent = Logic.formatNumber(diff, AppState.dp.total, sep);
+                    this.dom.outStatus.innerHTML = status;
+                    this.dom.outStatus.className = `value ${statusClass}`;
+                } else {
+                    ['outDiff', 'outStatus'].forEach(id => this.dom[id].textContent = '—');
+                    this.dom.outStatus.className = 'value';
+                }
+            },
+            
+            setSignature() {
+                this.dom.signature.innerHTML = `<p>Feito por HAlexandre © ${new Date().getFullYear()}</p>`;
+            }
+        };
+
+        const Logic = {
+            parseNumber(str, sep) {
+                if (typeof str === 'number') return str;
+                if (!str || String(str).trim() === '') return NaN;
+                const cleanStr = (sep === ',') ? String(str).replace(/\./g, '').replace(/,/g, '.') : String(str).replace(/,/g, '');
+                const num = parseFloat(cleanStr);
+                return isNaN(num) ? NaN : num;
+            },
+            
+            formatNumber(n, dp, sep) {
+                if (!isFinite(n)) return '—';
+                return new Intl.NumberFormat(sep === ',' ? 'pt-BR' : 'en-US', {
+                    minimumFractionDigits: dp, maximumFractionDigits: dp
+                }).format(n);
+            },
+
+            round(x, dp, mode) {
+                if (!isFinite(x)) return NaN;
+                const f = Math.pow(10, dp);
+                const epsilon = 1e-9 * Math.sign(x);
+                let y = (x * f) + epsilon;
+                if (mode === 'floor') return Math.floor(y) / f;
+                if (mode === 'ceil') return Math.ceil(y) / f;
+                return Math.round(y) / f;
+            },
+
+            calculate({ findExact = false } = {}) {
+                const { dp, separator: sep, roundMode: mode, solve } = AppState;
+                let qty = this.parseNumber(UI.dom.qty.value, sep);
+                let unit = this.parseNumber(UI.dom.unit.value, sep);
+                let totalTarget = this.parseNumber(UI.dom.total.value, sep);
+
+                qty = this.round(qty, dp.qty, 'round');
+                unit = this.round(unit, dp.unit, 'round');
+
+                let solvedQty = qty, solvedUnit = unit, totalCalc = NaN, diff = NaN;
+
+                if (solve === 'total') {
+                    if (isFinite(qty) && isFinite(unit)) {
+                        totalCalc = this.round(qty * unit, dp.total, mode);
+                        diff = isFinite(totalTarget) ? this.round(totalCalc - totalTarget, dp.total, 'round') : 0;
+                    }
+                } else { // Solving for qty or unit
+                    const isSolvingQty = solve === 'qty';
+                    const fixedValue = isSolvingQty ? unit : qty;
+                    const dpToSolve = isSolvingQty ? dp.qty : dp.unit;
+                    
+                    if (isFinite(totalTarget) && isFinite(fixedValue) && fixedValue !== 0) {
+                        let solvedValue = this.round(totalTarget / fixedValue, dpToSolve, mode);
+                        if (isSolvingQty) solvedQty = solvedValue; else solvedUnit = solvedValue;
+
+                        totalCalc = this.round(solvedQty * solvedUnit, dp.total, mode);
+                        
+                        if (findExact) {
+                            const result = this.findExactValue({ value: solvedValue, fixed: fixedValue, solveName: solve, totalTarget });
+                            if (isSolvingQty) solvedQty = result.solvedValue; else solvedUnit = result.solvedValue;
+                            totalCalc = result.totalCalc;
+                        }
+                        diff = this.round(totalCalc - totalTarget, dp.total, 'round');
+                    }
+                }
+                
+                const step = this.calculateStepImpact(qty, unit);
+                const tolerance = 1 / Math.pow(10, dp.total + 2);
+                let status, statusClass;
+
+                if (!isFinite(diff)) {
+                    status = '—'; statusClass = '';
+                } else if (Math.abs(diff) < tolerance) {
+                    status = 'Total Atingido'; statusClass = 'status-success';
+                } else {
+                    status = `Diferença de ${this.formatNumber(diff, dp.total, sep)}`;
+                    statusClass = 'status-warning';
+                }
+
+                return { solvedQty, solvedUnit, totalCalc, diff, step, status, statusClass };
+            },
+
+            findExactValue({ value, fixed, solveName, totalTarget }) {
+                const { dp, roundMode: mode } = AppState;
+                const dpToSolve = solveName === 'unit' ? dp.unit : dp.qty;
+                const step = 1 / Math.pow(10, dpToSolve);
+                let count = 0, max = 200000;
+                let solvedValue = value;
+                let totalCalc = this.round((solveName === 'unit' ? fixed * solvedValue : solvedValue * fixed), dp.total, mode);
+                const targetRounded = this.round(totalTarget, dp.total, mode);
+
+                while (this.round(totalCalc, dp.total, 'round') !== targetRounded && count < max) {
+                    const dir = totalCalc < targetRounded ? 1 : -1;
+                    const nextValue = this.round(solvedValue + dir * step, dpToSolve, 'round');
+                    const nextTotal = this.round((solveName === 'unit' ? fixed * nextValue : nextValue * fixed), dp.total, mode);
+                    
+                    if (Math.abs(nextTotal - targetRounded) >= Math.abs(totalCalc - targetRounded) && count > 0) break;
+                    
+                    solvedValue = nextValue;
+                    totalCalc = nextTotal;
+                    count++;
+                }
+                return { solvedValue, totalCalc };
+            },
+            
+            calculateStepImpact(qty, unit) {
+                const { dp, solve } = AppState;
+                if (!isFinite(qty) && !isFinite(unit)) return NaN;
+                if (solve === 'unit') return this.round(qty * (1 / Math.pow(10, dp.unit)), dp.total, 'round');
+                if (solve === 'qty') return this.round(unit * (1 / Math.pow(10, dp.qty)), dp.total, 'round');
+                return 1 / Math.pow(10, dp.total);
+            }
+        };
+
+        const Events = {
+            setup() {
+                UI.dom.controlsCard.addEventListener('input', () => {
+                    this.updateStateFromUI();
+                    const results = Logic.calculate();
+                    UI.renderResults(results);
+                });
+                
+                ['qty', 'unit', 'total'].forEach(id => {
+                    UI.dom[id].addEventListener('blur', UI.formatInputOnBlur);
+                });
+                
+                UI.dom.btnCalc.addEventListener('click', () => {
+                    const results = Logic.calculate();
+                    UI.renderResults(results);
+                });
+                
+                UI.dom.btnExact.addEventListener('click', (e) => {
+                    UI.toggleButtonLoading(e.currentTarget, true);
+                    // setTimeout to allow UI to update before potentially long calculation
+                    setTimeout(() => {
+                        const results = Logic.calculate({ findExact: true });
+                        UI.renderResults(results);
+                        UI.toggleButtonLoading(e.currentTarget, false);
+                    }, 10);
+                });
+
+                UI.dom.btnClear.addEventListener('click', () => {
+                    ['qty', 'unit', 'total'].forEach(id => { if(!UI.dom[id].readOnly) UI.dom[id].value = ''; });
+                    const results = Logic.calculate();
+                    UI.renderResults(results);
+                });
+
+                UI.dom.solveOptions.addEventListener('change', (e) => {
+                    AppState.solve = e.target.value;
+                    UI.updateInputStates();
+                    const results = Logic.calculate();
+                    UI.renderResults(results);
+                    AppState.save();
+                });
+            },
+            
+            updateStateFromUI() {
+                AppState.roundMode = UI.dom.roundMode.value;
+                AppState.separator = UI.dom.sep.value;
+                AppState.dp.qty = parseInt(UI.dom.dpQty.value, 10);
+                AppState.dp.unit = parseInt(UI.dom.dpUnit.value, 10);
+                AppState.dp.total = parseInt(UI.dom.dpTotal.value, 10);
+                AppState.save();
+            }
+        };
+
+        const App = {
+            init() {
+                AppState.load();
+                UI.init();
+                Events.setup();
+                const results = Logic.calculate();
+                UI.renderResults(results);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', App.init);
+    </script>
+</body>
+</html>
+
