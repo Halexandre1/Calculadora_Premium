@@ -194,7 +194,7 @@
         /**
          * @file Calculadora Premium - Versão Final e Polida
          * @author HAlexandre
-         * @version 1.1.0
+         * @version 1.2.0
          */
 
         const AppState = {
@@ -387,9 +387,10 @@
                 let count = 0, max = 200000;
                 let solvedValue = value;
                 let totalCalc = this.round((solveName === 'unit' ? fixed * solvedValue : solvedValue * fixed), dp.total, mode);
-                const targetRounded = this.round(totalTarget, dp.total, mode);
+                const targetRounded = this.round(totalTarget, dp.total, 'round');
+                const tolerance = 1 / Math.pow(10, dp.total + 2);
 
-                while (this.round(totalCalc, dp.total, 'round') !== targetRounded && count < max) {
+                while (Math.abs(totalCalc - targetRounded) > tolerance && count < max) {
                     const dir = totalCalc < targetRounded ? 1 : -1;
                     const nextValue = this.round(solvedValue + dir * step, dpToSolve, 'round');
                     const nextTotal = this.round((solveName === 'unit' ? fixed * nextValue : nextValue * fixed), dp.total, mode);
@@ -473,11 +474,12 @@
                     unit: "0,3144",
                     total: "7.674,27"
                 };
-                UI.dom.qty.value = initialValues.qty;
-                UI.dom.unit.value = initialValues.unit;
-                UI.dom.total.value = initialValues.total;
+                if (!localStorage.getItem('calcPremiumSettings')) {
+                    UI.dom.qty.value = initialValues.qty;
+                    UI.dom.unit.value = initialValues.unit;
+                    UI.dom.total.value = initialValues.total;
+                }
 
-                // Format initial values
                 ['qty', 'unit', 'total'].forEach(id => {
                     if (UI.dom[id].value) {
                        const event = new Event('blur');
@@ -487,7 +489,7 @@
 
                 const results = Logic.calculate();
                 UI.renderResults(results);
-                UI.updateInputStates(); // Ensure correct field is readonly
+                UI.updateInputStates();
             }
         };
 
