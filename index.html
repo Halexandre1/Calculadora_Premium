@@ -17,7 +17,7 @@
             --border: rgba(255, 255, 255, 0.1); --border-focus: rgba(0, 212, 255, 0.4);
             --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1); --shadow-md: 0 8px 25px rgba(0, 0, 0, 0.15); --shadow-lg: 0 15px 35px rgba(0, 0, 0, 0.2);
             --shadow-accent: 0 8px 25px var(--accent-glow);
-            --radius-md: 12px; --radius-xl: 24px;
+            --radius-md: 12px; --radius-xl: 24px; --radius-sm: 8px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
@@ -69,8 +69,18 @@
         .form-group label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem; transition: color 0.2s ease; }
         .form-group input, .form-group select {
             width: 100%; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-md);
-            background: var(--surface-2); color: var(--text-primary); font-size: 1rem; font-weight: 500;
+            background-color: var(--surface-2); color: var(--text-primary); font-size: 1rem; font-weight: 500;
             transition: all 0.3s ease; backdrop-filter: blur(5px);
+        }
+        .form-group select {
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23a8b2d1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 1.25rem center; background-repeat: no-repeat; background-size: 1em;
+            padding-right: 3.5rem;
+        }
+        .form-group select option {
+            background: var(--bg-primary);
+            color: var(--text-primary);
         }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1), var(--shadow-md); background: var(--surface-3); }
         .form-group input[readonly] { background: var(--surface-1); opacity: 0.7; cursor: not-allowed; }
@@ -246,12 +256,15 @@
             
             formatInputOnBlur(event) {
                 const input = event.target;
+                if (input.readOnly) return;
                 const key = input.id;
                 const dp = AppState.dp[key];
                 const sep = AppState.separator;
                 const value = Logic.parseNumber(input.value, sep);
                 if (isFinite(value)) {
                     input.value = Logic.formatNumber(value, dp, sep);
+                } else {
+                    input.value = '';
                 }
             },
             
@@ -331,7 +344,7 @@
                         totalCalc = this.round(qty * unit, dp.total, mode);
                         diff = isFinite(totalTarget) ? this.round(totalCalc - totalTarget, dp.total, 'round') : 0;
                     }
-                } else { // Solving for qty or unit
+                } else {
                     const isSolvingQty = solve === 'qty';
                     const fixedValue = isSolvingQty ? unit : qty;
                     const dpToSolve = isSolvingQty ? dp.qty : dp.unit;
@@ -418,7 +431,6 @@
                 
                 UI.dom.btnExact.addEventListener('click', (e) => {
                     UI.toggleButtonLoading(e.currentTarget, true);
-                    // setTimeout to allow UI to update before potentially long calculation
                     setTimeout(() => {
                         const results = Logic.calculate({ findExact: true });
                         UI.renderResults(results);
@@ -456,8 +468,26 @@
                 AppState.load();
                 UI.init();
                 Events.setup();
+                const initialValues = {
+                    qty: "24.416",
+                    unit: "0,3144",
+                    total: "7.674,27"
+                };
+                UI.dom.qty.value = initialValues.qty;
+                UI.dom.unit.value = initialValues.unit;
+                UI.dom.total.value = initialValues.total;
+
+                // Format initial values
+                ['qty', 'unit', 'total'].forEach(id => {
+                    if (UI.dom[id].value) {
+                       const event = new Event('blur');
+                       UI.dom[id].dispatchEvent(event);
+                    }
+                });
+
                 const results = Logic.calculate();
                 UI.renderResults(results);
+                UI.updateInputStates(); // Ensure correct field is readonly
             }
         };
 
